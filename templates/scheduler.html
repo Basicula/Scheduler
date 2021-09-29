@@ -1,0 +1,43 @@
+{% extends "layout.html" %}
+
+{% block customstyles %}
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/scheduler.css') }}">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/circle_timer.css') }}">
+
+    <script type="text/javascript" src="https://combinatronics.com/Basicula/CommonFront/master/script/dropdown_button.js"></script>
+    
+    <script src="{{ url_for('static', filename='script/gradient.js') }}"></script>
+    <script src="{{ url_for('static', filename='script/active_task.js') }}"></script>
+    <script src="{{ url_for('static', filename='script/scheduler.js') }}"></script>
+{% endblock customstyles %}
+
+{% block content %}
+    <div class="scheduler-container">
+        <div class="scheduler-config">
+            <div class="scheduler-config-header">
+                Config
+            </div>
+            <div class="scheduler-config-cooldown">
+                <label for="scheduler_cooldown_input">Cooldown in seconds</label>
+                <input type="text" class="scheduler-cooldown-input" id="scheduler_cooldown_input" name="scheduler_cooldown_input" value="{{ cooldown }}">
+                <label for="scheduler_task_time_input">Task time</label>
+                <input type="text" class="scheduler-task-time-input" id="scheduler_task_time_input" name="scheduler_task_time_input" value="{{ task_time }}">
+                Next task in
+                <div class="scheduler-countdown" id="scheduler_countdown">00:00:00</div>
+            </div>
+            <input type="button" value="Pause" class="config-pause-button" id="config_pause_button">
+            <input type="button" value="Get task" class="config-get-task-button" id="config_get_task_button">
+            <input type="button" value="Backup" class="config-backup-button" id="config_backup_button">
+        </div>
+        <div class="tasks-container">
+            <div class="tasks-header">
+                Tasks
+            </div>
+            <div id="base_tasks_container" class="base-tasks-container">
+                
+            </div>
+        </div>
+        <div class="scheduler-field" id="scheduler_field">
+        </div>
+    </div>
+{% endblock content %}
