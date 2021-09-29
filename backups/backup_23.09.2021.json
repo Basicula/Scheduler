@@ -1,0 +1,359 @@
+{
+    "tasks": [
+        {
+            "name": "Handstand",
+            "type": "Time",
+            "min": 10,
+            "max": 60,
+            "total": 663
+        },
+        {
+            "name": "Push ups",
+            "type": "Reps",
+            "min": 10,
+            "max": 50,
+            "total": 626
+        },
+        {
+            "name": "Handstand push ups",
+            "type": "Reps",
+            "min": 2,
+            "max": 8,
+            "total": 55
+        },
+        {
+            "name": "Dips",
+            "type": "Reps",
+            "min": 10,
+            "max": 30,
+            "total": 311
+        },
+        {
+            "name": "Front lever",
+            "type": "Time",
+            "min": 2,
+            "max": 5,
+            "total": 51
+        },
+        {
+            "name": "Tuck front lever push ups",
+            "type": "Reps",
+            "min": 2,
+            "max": 8,
+            "total": 61
+        },
+        {
+            "name": "Handstand to planche tries",
+            "type": "Reps",
+            "min": 1,
+            "max": 1,
+            "total": 15
+        },
+        {
+            "name": "Squats",
+            "type": "Reps",
+            "min": 10,
+            "max": 30,
+            "total": 391
+        },
+        {
+            "name": "Horizontal fold",
+            "type": "Time",
+            "min": 10,
+            "max": 60,
+            "total": 528
+        },
+        {
+            "name": "Vertical fold",
+            "type": "Time",
+            "min": 10,
+            "max": 60,
+            "total": 720
+        },
+        {
+            "name": "Shrugs",
+            "type": "Reps",
+            "min": 10,
+            "max": 25,
+            "total": 270
+        },
+        {
+            "name": "Roll forward plank",
+            "type": "Time",
+            "min": 10,
+            "max": 45,
+            "total": 353
+        }
+    ],
+    "active_tasks": [
+        {
+            "name": "Roll forward plank",
+            "value": 15,
+            "time": 43200,
+            "remaining_time": 4111,
+            "id": 214
+        },
+        {
+            "name": "Shrugs",
+            "value": 19,
+            "time": 43200,
+            "remaining_time": 5912,
+            "id": 215
+        },
+        {
+            "name": "Tuck front lever push ups",
+            "value": 2,
+            "time": 43200,
+            "remaining_time": 7712,
+            "id": 216
+        },
+        {
+            "name": "Tuck front lever push ups",
+            "value": 4,
+            "time": 43200,
+            "remaining_time": 11312,
+            "id": 218
+        },
+        {
+            "name": "Dips",
+            "value": 11,
+            "time": 43200,
+            "remaining_time": 13112,
+            "id": 219
+        },
+        {
+            "name": "Dips",
+            "value": 20,
+            "time": 43200,
+            "remaining_time": 16709,
+            "id": 221
+        },
+        {
+            "name": "Tuck front lever push ups",
+            "value": 8,
+            "time": 43200,
+            "remaining_time": 20314,
+            "id": 225
+        },
+        {
+            "name": "Push ups",
+            "value": 43,
+            "time": 43200,
+            "remaining_time": 22054,
+            "id": 226
+        },
+        {
+            "name": "Handstand",
+            "value": 10,
+            "time": 43200,
+            "remaining_time": 22114,
+            "id": 228
+        },
+        {
+            "name": "Shrugs",
+            "value": 24,
+            "time": 43200,
+            "remaining_time": 23909,
+            "id": 229
+        },
+        {
+            "name": "Shrugs",
+            "value": 25,
+            "time": 43200,
+            "remaining_time": 23909,
+            "id": 230
+        },
+        {
+            "name": "Handstand",
+            "value": 28,
+            "time": 43200,
+            "remaining_time": 23914,
+            "id": 231
+        },
+        {
+            "name": "Horizontal fold",
+            "value": 22,
+            "time": 43200,
+            "remaining_time": 25710,
+            "id": 232
+        },
+        {
+            "name": "Horizontal fold",
+            "value": 59,
+            "time": 43200,
+            "remaining_time": 25710,
+            "id": 233
+        },
+        {
+            "name": "Dips",
+            "value": 29,
+            "time": 43200,
+            "remaining_time": 25714,
+            "id": 234
+        },
+        {
+            "name": "Squats",
+            "value": 21,
+            "time": 43200,
+            "remaining_time": 27510,
+            "id": 235
+        },
+        {
+            "name": "Handstand to planche tries",
+            "value": 1,
+            "time": 43200,
+            "remaining_time": 27510,
+            "id": 236
+        },
+        {
+            "name": "Push ups",
+            "value": 43,
+            "time": 43200,
+            "remaining_time": 27514,
+            "id": 237
+        },
+        {
+            "name": "Handstand to planche tries",
+            "value": 1,
+            "time": 43200,
+            "remaining_time": 29256,
+            "id": 238
+        },
+        {
+            "name": "Push ups",
+            "value": 46,
+            "time": 43200,
+            "remaining_time": 29256,
+            "id": 239
+        },
+        {
+            "name": "Handstand",
+            "value": 12,
+            "time": 43200,
+            "remaining_time": 29256,
+            "id": 240
+        },
+        {
+            "name": "Handstand push ups",
+            "value": 3,
+            "time": 43200,
+            "remaining_time": 29256,
+            "id": 241
+        },
+        {
+            "name": "Tuck front lever push ups",
+            "value": 2,
+            "time": 43200,
+            "remaining_time": 29256,
+            "id": 242
+        },
+        {
+            "name": "Front lever",
+            "value": 3,
+            "time": 43200,
+            "remaining_time": 29256,
+            "id": 243
+        },
+        {
+            "name": "Vertical fold",
+            "value": 44,
+            "time": 43200,
+            "remaining_time": 29315,
+            "id": 244
+        },
+        {
+            "name": "Squats",
+            "value": 23,
+            "time": 43200,
+            "remaining_time": 31115,
+            "id": 245
+        },
+        {
+            "name": "Squats",
+            "value": 23,
+            "time": 43200,
+            "remaining_time": 32910,
+            "id": 246
+        },
+        {
+            "name": "Roll forward plank",
+            "value": 38,
+            "time": 43200,
+            "remaining_time": 32910,
+            "id": 247
+        },
+        {
+            "name": "Tuck front lever push ups",
+            "value": 2,
+            "time": 43200,
+            "remaining_time": 32915,
+            "id": 248
+        },
+        {
+            "name": "Handstand",
+            "value": 38,
+            "time": 43200,
+            "remaining_time": 34716,
+            "id": 249
+        },
+        {
+            "name": "Roll forward plank",
+            "value": 38,
+            "time": 43200,
+            "remaining_time": 36510,
+            "id": 250
+        },
+        {
+            "name": "Vertical fold",
+            "value": 21,
+            "time": 43200,
+            "remaining_time": 36510,
+            "id": 251
+        },
+        {
+            "name": "Vertical fold",
+            "value": 26,
+            "time": 43200,
+            "remaining_time": 36516,
+            "id": 252
+        },
+        {
+            "name": "Vertical fold",
+            "value": 38,
+            "time": 43200,
+            "remaining_time": 38310,
+            "id": 253
+        },
+        {
+            "name": "Tuck front lever push ups",
+            "value": 6,
+            "time": 43200,
+            "remaining_time": 38310,
+            "id": 254
+        },
+        {
+            "name": "Handstand",
+            "value": 17,
+            "time": 43200,
+            "remaining_time": 38316,
+            "id": 255
+        },
+        {
+            "name": "Handstand",
+            "value": 25,
+            "time": 43200,
+            "remaining_time": 40116,
+            "id": 256
+        },
+        {
+            "name": "Dips",
+            "value": 12,
+            "time": 43200,
+            "remaining_time": 41917,
+            "id": 257
+        }
+    ],
+    "cooldown": 1800,
+    "task_time": 43200,
+    "free_id": 258
+}
