@@ -19,6 +19,9 @@ class ActiveTask {
         this.id = task.id;
         this.position = [0, 0];
         this.complited = false;
+        
+        this.alarm_sound = new Audio('https://media.geeksforgeeks.org/wp-content/uploads/20190531135120/beep.mp3');
+        this.alarm_stoped = false;
 
         this._init_circle();
         this._init_element();
@@ -56,23 +59,30 @@ class ActiveTask {
                 moved = true;
             }
 
-            document.addEventListener('mousemove', onMouseMove);
+            if (event.button == 0)
+                document.addEventListener('mousemove', onMouseMove);
 
-            this.onmouseup = function(){
+            this.onmouseup = function(e){
                 if (moved) {
                     document.removeEventListener('mousemove', onMouseMove);
                     this.onmouseup = null;
                     moved = false;
                 }
                 else {
-                    self.complited = true;
-                    $.ajax({
-                        url: "/complete_task",
-                        type: "POST",
-                        data: {
-                            'id': self.id,
-                        }
-                    });
+                    if (e.button == 1) {
+                        self.alarm_sound.pause();
+                        self.alarm_stoped = true;
+                    }
+                    else {
+                        self.complited = true;
+                        $.ajax({
+                            url: "/complete_task",
+                            type: "POST",
+                            data: {
+                                'id': self.id,
+                            }
+                        });
+                    }
                 }
             };
 
@@ -148,6 +158,8 @@ class ActiveTask {
     }
 
     update_remaining_time(remaining_time) {
+        if (remaining_time < 600 && !this.alarm_stoped)
+            this.alarm_sound.play();
         this.remaining_time = remaining_time;
         this.active_task_time.textContent = format_time(this.remaining_time);
         const path_length = Math.round(this.path_length * this.remaining_time / this.time);
