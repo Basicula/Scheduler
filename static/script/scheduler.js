@@ -1,7 +1,3 @@
-function random(min, max) {
-    return min + Math.floor((max - min) * Math.random());
-}
-
 function check_collision(first_circle, second_circle) {
     const center_dist = (first_circle.center[0] - second_circle.center[0]) * (first_circle.center[0] - second_circle.center[0]) +
         (first_circle.center[1] - second_circle.center[1]) * (first_circle.center[1] - second_circle.center[1]);
@@ -28,8 +24,8 @@ class SchedulerField {
         this._field_element.appendChild(task.element);
 
         const parent_pos = $(this._field_element).position();
-        const top = parent_pos.top + random(0, this._field_element.offsetHeight - $(task.element).height());
-        const left = parent_pos.left + random(0, this._field_element.offsetWidth - $(task.element).width());
+        const top = parent_pos.top + CommonUtils.random(0, this._field_element.offsetHeight - $(task.element).height());
+        const left = parent_pos.left + CommonUtils.random(0, this._field_element.offsetWidth - $(task.element).width());
         task.set_position(top, left);
     }
 
@@ -152,22 +148,28 @@ function init_base_tasks(tasks) {
     var base_tasks_container = document.getElementById("base_tasks_container");
     for (let i = 0; i < tasks.length; ++i) {
         const task = tasks[i];
-        base_tasks_elements.push(new DropDownButton(task.name));
-        var task_content = base_tasks_elements[i];
-        task_content.element.classList.add("task");
+        base_tasks_elements.push(new DropDownButton(task.name + ": "));
+        base_tasks_elements[i].element.classList.add("task");
+
+        var color_picker = new ColorPicker();
+        color_picker.element.style.top = "1px";
+        color_picker.onchange_callback = function() {
+            base_tasks_elements[i].element.style.backgroundColor = this.color;
+        };
+        base_tasks_elements[i].element.appendChild(color_picker.element);
 
         var task_inner_content = document.createElement("div");
         task_inner_content.classList.add("task-details");
 
-        var task_total = document.createElement("div");
-        task_total.classList.add("task-total");
-        task_total.textContent = "Total: ";
-        var task_total_span = document.createElement("span");
-        task_total_span.classList.add("task-total-done");
-        task_total_span.setAttribute("id", `base_task_${task.id}_total`);
-        task_total_span.textContent = get_task_total_text(task);
-        task_total.appendChild(task_total_span);
-        task_inner_content.appendChild(task_total);
+        base_tasks_elements[i].task_total = document.createElement("div");
+        base_tasks_elements[i].task_total.classList.add("task-total");
+        base_tasks_elements[i].task_total.textContent = "Total: ";
+        base_tasks_elements[i].task_total_span = document.createElement("span");
+        base_tasks_elements[i].task_total_span.classList.add("task-total-done");
+        base_tasks_elements[i].task_total_span.setAttribute("id", `base_task_${task.id}_total`);
+        base_tasks_elements[i].task_total_span.textContent = get_task_total_text(task);
+        base_tasks_elements[i].button.appendChild(base_tasks_elements[i].task_total_span);
+        task_inner_content.appendChild(base_tasks_elements[i].task_total);
 
         var task_type = document.createElement("div");
         task_type.classList.add("task-type");
@@ -179,18 +181,18 @@ function init_base_tasks(tasks) {
         task_range.textContent = "Range: [" + task.min + ", " + task.max + "]"
         task_inner_content.appendChild(task_range);
 
-        task_content.button.classList.add("task-header");
-        task_content.set_inner_content(task_inner_content);
+        base_tasks_elements[i].button.classList.add("task-header");
+        base_tasks_elements[i].set_inner_content(task_inner_content);
 
-        //task_content.on_open_callback = function() {
-        //    task_content.button.textContent = "1";
-        //};
+        base_tasks_elements[i].on_open_callback = function() {
+            base_tasks_elements[i].task_total.appendChild(base_tasks_elements[i].task_total_span);
+        };
 
-        //task_content.on_hide_callback = function() {
-        //    task_content.button.textContent = "2";
-        //};
+        base_tasks_elements[i].on_hide_callback = function() {
+            base_tasks_elements[i].button.appendChild(base_tasks_elements[i].task_total_span);
+        };
 
-        base_tasks_container.appendChild(task_content.element);
+        base_tasks_container.appendChild(base_tasks_elements[i].element);
     }
 }
 

@@ -92,6 +92,7 @@
     text-align: center;
     border: solid black 1px;
     margin: 1%;
+    position: relative;
 }
 
 .task-header {
