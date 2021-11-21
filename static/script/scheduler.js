@@ -127,6 +127,7 @@ class SchedulerField {
 }
 
 scheduler_field = undefined;
+paused = false;
 base_tasks_elements = [];
 
 function get_task_total_text(task) {
@@ -151,12 +152,32 @@ function init_base_tasks(tasks) {
         base_tasks_elements.push(new DropDownButton(task.name + ": "));
         base_tasks_elements[i].element.classList.add("task");
 
+        var task_buttons_container = document.createElement("div");
+        task_buttons_container.classList.add("task-buttons-container");
+
         var color_picker = new ColorPicker();
-        color_picker.element.style.top = "1px";
-        color_picker.onchange_callback = function() {
+        color_picker.element.classList.add("color-picker-button");
+        color_picker.onchange_callback = function () {
             base_tasks_elements[i].element.style.backgroundColor = this.color;
         };
-        base_tasks_elements[i].element.appendChild(color_picker.element);
+        task_buttons_container.appendChild(color_picker.element);
+
+        var disabling_button = document.createElement("div");
+        disabling_button.classList.add("disabling-button")
+        if (task.disabled)
+            base_tasks_elements[i].element.classList.add("disabled");
+        disabling_button.textContent = '⦸';
+        disabling_button.onclick = function() {
+            base_tasks_elements[i].element.classList.toggle("disabled");
+            $.ajax({
+                type: "POST",
+                url: "/toggle_task",
+                data: {"id" : task.id}
+            });
+        };
+        task_buttons_container.appendChild(disabling_button);
+
+        base_tasks_elements[i].element.appendChild(task_buttons_container);
 
         var task_inner_content = document.createElement("div");
         task_inner_content.classList.add("task-details");
@@ -184,11 +205,11 @@ function init_base_tasks(tasks) {
         base_tasks_elements[i].button.classList.add("task-header");
         base_tasks_elements[i].set_inner_content(task_inner_content);
 
-        base_tasks_elements[i].on_open_callback = function() {
+        base_tasks_elements[i].on_open_callback = function () {
             base_tasks_elements[i].task_total.appendChild(base_tasks_elements[i].task_total_span);
         };
 
-        base_tasks_elements[i].on_hide_callback = function() {
+        base_tasks_elements[i].on_hide_callback = function () {
             base_tasks_elements[i].button.appendChild(base_tasks_elements[i].task_total_span);
         };
 
@@ -197,17 +218,19 @@ function init_base_tasks(tasks) {
 }
 
 function update() {
-    $.ajax({
-        type: "GET",
-        url: "/scheduler_get",
-        success: function (response) {
-            if (base_tasks_elements.length != response.tasks.length)
-                init_base_tasks(response.tasks);
-            $("#scheduler_countdown").text(format_time(response.countdown_time));
-            scheduler_field.update_tasks(response.active_tasks);
-            update_totals(response.tasks);
-        }
-    });
+    if (!paused) {
+        $.ajax({
+            type: "GET",
+            url: "/scheduler_get",
+            success: function (response) {
+                if (base_tasks_elements.length != response.tasks.length)
+                    init_base_tasks(response.tasks);
+                $("#scheduler_countdown").text(format_time(response.countdown_time));
+                scheduler_field.update_tasks(response.active_tasks);
+                update_totals(response.tasks);
+            }
+        });
+    }
 }
 
 function set_events() {
@@ -235,6 +258,7 @@ function set_events() {
     config_pause_button.onclick = function () {
         if (this.value === "Pause") {
             this.value = "Start";
+            paused = true;
             $.ajax({
                 type: 'POST',
                 url: "/pause"
@@ -242,6 +266,7 @@ function set_events() {
         }
         else {
             this.value = "Pause";
+            paused = false;
             $.ajax({
                 type: 'POST',
                 url: "/start"
@@ -256,7 +281,7 @@ function set_events() {
             url: "/new_task"
         });
     };
-    
+
     var config_backup_button = document.getElementById("config_backup_button");
     config_backup_button.onclick = function () {
         $.ajax({

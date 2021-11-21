@@ -69,9 +69,13 @@ class BaseTask:
         self.max = max
         self.total = total
         self.id = id
+        self.disabled = False
 
     def generate_value(self):
         return random.randint(self.min, self.max)
+
+    def toggle(self):
+        self.disabled = not self.disabled
 
     def dict(self):
         return {
@@ -80,7 +84,8 @@ class BaseTask:
             'type': self.type,
             'min': self.min,
             'max': self.max,
-            'total': self.total
+            'total': self.total,
+            'disabled': self.disabled
         }
 
 class Scheduler:
@@ -129,6 +134,12 @@ class Scheduler:
                 self.active_tasks.pop(i)
                 return
 
+    def toggle_task(self, id):
+        for task in self.tasks:
+            if task.id == id:
+                task.toggle()
+                return
+
     def backup(self):
         with open("backup.json", 'w') as f:
             json.dump({
@@ -168,8 +179,14 @@ class Scheduler:
             self.main_timer.pause()
 
     def schedule_new_tasks(self, task_cnt):
-        for i in range(task_cnt):
-            base_task = random.choice(self.tasks)
+        available_tasks = []
+        for task in self.tasks:
+            if not task.disabled:
+                available_tasks.append(task)
+        if len(available_tasks) == 0:
+            return
+        for _ in range(task_cnt):
+            base_task = random.choice(available_tasks)
             self.active_tasks.append(ActiveTask(base_task.name, base_task.generate_value(), self.task_time, self.task_time, self.free_id))
             self.free_id += 1
             self.active_tasks[-1].start()

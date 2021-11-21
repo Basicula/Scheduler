@@ -62,6 +62,36 @@
     border: solid black 1px;
 }
 
+.task-buttons-container {
+    position: absolute;
+    padding: 0;
+    margin: 0;
+    right: 0;
+    top: 0;
+    display: flex;
+    flex-direction: row;
+}
+
+.disabling-button {
+    cursor: pointer;
+}
+
+.disabled {
+    background: repeating-linear-gradient(
+        45deg,
+      rgba(0, 0, 0, 0.2),
+      rgba(0, 0, 0, 0.2) 10px,
+      rgba(0, 0, 0, 0.3) 10px,
+      rgba(0, 0, 0, 0.3) 20px
+    );
+}
+
+.color-picker-button {
+    cursor: pointer;
+    align-items: center;
+    display: flex;
+}
+
 .base-tasks-container {
     height: 100%;
     overflow: auto;
@@ -99,7 +129,7 @@
     font-weight: bold;
     text-align: center;
     border: solid black 1px;
-    cursor: pointer;
+    cursor: default;
 }
 
 .task-details {

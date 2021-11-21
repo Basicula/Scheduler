@@ -64,6 +64,13 @@ def backup():
     scheduler.backup()
     return Response(status=200)
 
+@app.route("/toggle_task", methods=["POST"])
+def toggle_task():
+    form = request.form
+    scheduler.toggle_task(int(form['id']))
+    return Response(status=200)
+
+
 if __name__ == "__main__":
     BaseManager.register("Scheduler", Scheduler)
     manager = BaseManager()
