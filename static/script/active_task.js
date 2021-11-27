@@ -77,7 +77,7 @@ class ActiveTask {
                         self.complited = true;
                         $.ajax({
                             url: "/complete_task",
-                            type: "POST",
+                            type: "DELETE",
                             data: {
                                 'id': self.id,
                             }

@@ -170,7 +170,7 @@ function init_base_tasks(tasks) {
         disabling_button.onclick = function() {
             base_tasks_elements[i].element.classList.toggle("disabled");
             $.ajax({
-                type: "POST",
+                type: "PUT",
                 url: "/toggle_task",
                 data: {"id" : task.id}
             });
@@ -237,7 +237,7 @@ function set_events() {
     var scheduler_cooldown_input = document.getElementById("scheduler_cooldown_input");
     scheduler_cooldown_input.onchange = function () {
         $.ajax({
-            type: 'POST',
+            type: 'PUT',
             url: "/cooldown_set",
             data: { "cooldown_in_seconds": this.value }
         });
@@ -247,7 +247,7 @@ function set_events() {
     var scheduler_task_time_input = document.getElementById("scheduler_task_time_input");
     scheduler_task_time_input.onchange = function () {
         $.ajax({
-            type: 'POST',
+            type: 'PUT',
             url: "/task_time_set",
             data: { "task_time": this.value }
         });
@@ -260,7 +260,7 @@ function set_events() {
             this.value = "Start";
             paused = true;
             $.ajax({
-                type: 'POST',
+                type: 'PUT',
                 url: "/pause"
             });
         }
@@ -268,7 +268,7 @@ function set_events() {
             this.value = "Pause";
             paused = false;
             $.ajax({
-                type: 'POST',
+                type: 'PUT',
                 url: "/start"
             });
         }
@@ -285,7 +285,7 @@ function set_events() {
     var config_backup_button = document.getElementById("config_backup_button");
     config_backup_button.onclick = function () {
         $.ajax({
-            type: 'POST',
+            type: 'PUT',
             url: "/backup"
         });
     };
