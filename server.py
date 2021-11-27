@@ -70,7 +70,6 @@ def toggle_task():
     scheduler.toggle_task(int(form['id']))
     return Response(status=200)
 
-
 if __name__ == "__main__":
     BaseManager.register("Scheduler", Scheduler)
     manager = BaseManager()
@@ -81,4 +80,4 @@ if __name__ == "__main__":
     scheduler_main_process = Process(target=scheduler.start)
     scheduler_main_process.start()
 
-    app.run(debug=True)
+    app.run(debug=False)
