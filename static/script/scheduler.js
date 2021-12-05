@@ -29,13 +29,13 @@ class SchedulerField {
         task.set_position(top, left);
     }
 
-    update_tasks(tasks) {
+    update_tasks(active_tasks, tasks) {
         var to_remove = [];
         for (let i = 0; i < this.active_tasks.length; ++i) {
             const task = this.active_tasks[i];
             let task_is_running = false;
-            for (let j = 0; j < tasks.length; ++j) {
-                if (task.id == tasks[j].id) {
+            for (let j = 0; j < active_tasks.length; ++j) {
+                if (task.id == active_tasks[j].Id) {
                     task_is_running = true;
                     break;
                 }
@@ -50,19 +50,28 @@ class SchedulerField {
             this.active_tasks.splice(to_remove[i], 1);
         }
 
-        for (let i = 0; i < tasks.length; ++i) {
-            const task = tasks[i];
+        for (let i = 0; i < active_tasks.length; ++i) {
+            const task = active_tasks[i];
             let task_is_new = true;
             for (let j = 0; j < this.active_tasks.length; ++j) {
                 let active_task = this.active_tasks[j];
-                if (task.id == active_task.id) {
+                if (task.Id == active_task.id) {
                     task_is_new = false;
-                    active_task.update_remaining_time(task.remaining_time);
+                    active_task.update_remaining_time(task.RemainingTime);
                     break;
                 }
             }
-            if (task_is_new)
-                this.add_new_task(new ActiveTask(task));
+            if (task_is_new) {
+                for (let i = 0; i < tasks.length; ++i) {
+                    if (tasks[i].Id == task.ActivityId) {
+                        if (tasks[i].ShortName)
+                            this.add_new_task(new ActiveTask(task, tasks[i].ShortName));
+                        else
+                            this.add_new_task(new ActiveTask(task, tasks[i].Name));
+                        break;
+                    }
+                }
+            }
         }
     }
 
@@ -131,16 +140,16 @@ paused = false;
 base_tasks_elements = [];
 
 function get_task_total_text(task) {
-    if (task.type == "Reps")
-        return task.total;
+    if (task.Type == "Reps")
+        return task.TotalDone;
     else
-        return format_time(task.total);
+        return format_time(task.TotalDone);
 }
 
 function update_totals(tasks) {
     for (let i = 0; i < tasks.length; ++i) {
         const task = tasks[i];
-        $(`#base_task_${task.id}_total`).text(get_task_total_text(tasks[i]));
+        $(`#base_task_${task.Id}_total`).text(get_task_total_text(tasks[i]));
     }
 }
 
@@ -149,7 +158,7 @@ function init_base_tasks(tasks) {
     var base_tasks_container = document.getElementById("base_tasks_container");
     for (let i = 0; i < tasks.length; ++i) {
         const task = tasks[i];
-        base_tasks_elements.push(new DropDownButton(task.name + ": "));
+        base_tasks_elements.push(new DropDownButton(task.Name + ": "));
         base_tasks_elements[i].element.classList.add("task");
 
         var task_buttons_container = document.createElement("div");
@@ -164,7 +173,7 @@ function init_base_tasks(tasks) {
 
         var disabling_button = document.createElement("div");
         disabling_button.classList.add("disabling-button")
-        if (task.disabled)
+        if (task.Disabled)
             base_tasks_elements[i].element.classList.add("disabled");
         disabling_button.textContent = '⦸';
         disabling_button.onclick = function() {
@@ -172,7 +181,7 @@ function init_base_tasks(tasks) {
             $.ajax({
                 type: "PUT",
                 url: "/toggle_task",
-                data: {"id" : task.id}
+                data: {"id" : task.Id}
             });
         };
         task_buttons_container.appendChild(disabling_button);
@@ -187,19 +196,19 @@ function init_base_tasks(tasks) {
         base_tasks_elements[i].task_total.textContent = "Total: ";
         base_tasks_elements[i].task_total_span = document.createElement("span");
         base_tasks_elements[i].task_total_span.classList.add("task-total-done");
-        base_tasks_elements[i].task_total_span.setAttribute("id", `base_task_${task.id}_total`);
+        base_tasks_elements[i].task_total_span.setAttribute("id", `base_task_${task.Id}_total`);
         base_tasks_elements[i].task_total_span.textContent = get_task_total_text(task);
         base_tasks_elements[i].button.appendChild(base_tasks_elements[i].task_total_span);
         task_inner_content.appendChild(base_tasks_elements[i].task_total);
 
         var task_type = document.createElement("div");
         task_type.classList.add("task-type");
-        task_type.textContent = "Type: " + task.type;
+        task_type.textContent = "Type: " + task.Type;
         task_inner_content.appendChild(task_type);
 
         var task_range = document.createElement("div");
         task_range.classList.add("task-range");
-        task_range.textContent = "Range: [" + task.min + ", " + task.max + "]"
+        task_range.textContent = "Range: [" + task.Min + ", " + task.Max + "]"
         task_inner_content.appendChild(task_range);
 
         base_tasks_elements[i].button.classList.add("task-header");
@@ -226,7 +235,7 @@ function update() {
                 if (base_tasks_elements.length != response.tasks.length)
                     init_base_tasks(response.tasks);
                 $("#scheduler_countdown").text(format_time(response.countdown_time));
-                scheduler_field.update_tasks(response.active_tasks);
+                scheduler_field.update_tasks(response.active_tasks, response.tasks);
                 update_totals(response.tasks);
             }
         });
@@ -296,8 +305,18 @@ function set_events() {
     });
 }
 
+var update_interval;
+function update_rate_change() {
+    clearInterval(update_interval);
+    if(document.hidden)
+        update_interval = setInterval(update, 60000);
+    else
+        update_interval = setInterval(update, 1000);
+}
+document.addEventListener("visibilitychange", update_rate_change, false);
+
 $(document).ready(function () {
     scheduler_field = new SchedulerField();
     set_events();
-    setInterval(update, 1000);
+    update_interval = setInterval(update, 1000);
 });

@@ -2,6 +2,9 @@ import random
 import time
 import json
 from datetime import datetime
+from oopdb.OOPDB import OOPDB, RowsStyle
+from oopdb.ColumnConfig import ColumnConfig, PrimaryKey, ForeignKey
+from oopdb.Expression import Expression, Operation
 
 class Timer:
     def __init__(self, time):
@@ -16,6 +19,9 @@ class Timer:
         self.start_time = datetime.now()
         self.running = True
 
+    def toggle(self):
+        pass
+
     def finished(self):
         if not self.running:
             return False
@@ -27,82 +33,48 @@ class Timer:
         else:
             return self.time
 
-class ActiveTask:
-    def __init__(self, name, value, task_time, remaining_time, id):
-        self.name = name
-        self.value = value
-        self.task_time = task_time
-        self.remaining = remaining_time
-        self.id = id
-        self.timer = Timer(self.remaining)
-
-    def start(self):
-        self.timer.start()
-
-    def pause(self):
-        self.timer.pause()
-
-    def remaining_time(self):
-        return self.timer.remaining_time()
-
-    def finished(self):
-        return self.timer.finished()
-
-    def dict(self):
-        return {
-            'name': self.name,
-            'value': self.value,
-            'time': self.task_time,
-            'remaining_time': self.remaining_time(),
-            'id': self.id
-        }
-
-class BaseTask:
-    def __init__(self, name, type, min, max, total, id):
-        self.name = name
-        self.type = type
-        self.min = min
-        self.max = max
-        self.total = total
-        self.id = id
-        self.disabled = False
-
-    def generate_value(self):
-        return random.randint(self.min, self.max)
-
-    def toggle(self):
-        self.disabled = not self.disabled
-
-    def dict(self):
-        return {
-            'name': self.name,
-            'id': self.id,
-            'type': self.type,
-            'min': self.min,
-            'max': self.max,
-            'total': self.total,
-            'disabled': self.disabled
-        }
-
 class Scheduler:
+    activities_table_name = "Activities"
+    activity_id_column_name = "Id"
+    activity_disabled_column_name = "Disabled"
+    activity_min_column_name = "Min"
+    activity_max_column_name = "Max"
+    activity_total_column_name = "TotalDone"
+    
+    queued_activities_table_name = "QueuedActivities"
+    queued_activities_id_column_name = "Id"
+    queued_activities_activity_id_column_name = "ActivityId"
+    queued_activities_value_column_name = "Value"
+    queued_activities_time_column_name = "Time"
+    queued_activities_remaining_time_column_name = "RemainingTime"
+
+    path_to_db = "session.db"
+
     def __init__(self):
-        self.tasks = []
-        self.active_tasks = []
+        self.session = OOPDB()
         self.cooldown_in_seconds = 1800 # every 30 min
-        #self.task_time = 86400 # 1 day
         self.task_time = 43200 # 12 hours
-        self.free_id = 0
         self.main_timer = Timer(self.cooldown_in_seconds)
+        self.task_timers = {}
         self.paused = False
 
-    def add_new_task(self, task):
-        self.tasks.append(task)
-
     def get_active_tasks(self):
-        return list(map(lambda task: task.dict(), self.active_tasks))
+        self.session.open(self.path_to_db)
+        active_tasks = self.session.select(self.queued_activities_table_name).fetch(RowsStyle.DICTIONARY)
+        for active_task in active_tasks:
+            active_task[self.queued_activities_remaining_time_column_name] = self.task_timers[active_task[self.queued_activities_id_column_name]].remaining_time()
+        self.session.close()
+        return active_tasks
 
     def get_tasks(self):
-        return list(map(lambda task: task.dict(), self.tasks))
+        self.session.open(self.path_to_db)
+        tasks = self.session.select(self.activities_table_name).fetch(RowsStyle.DICTIONARY)
+        self.session.close()
+        return tasks
+
+    def update_main_timer(self):
+        self.main_timer = Timer(self.cooldown_in_seconds)
+        self.main_timer.start()
 
     def set_cooldown(self, cooldown_in_seconds):
         self.cooldown_in_seconds = cooldown_in_seconds
@@ -122,96 +94,110 @@ class Scheduler:
         return self.main_timer.remaining_time()
 
     def complete_task(self, id):
-        for i, active_task in enumerate(self.active_tasks):
-            if active_task.id == id:
-                for task in self.tasks:
-                    if task.name == active_task.name:
-                        task.total += active_task.value
-                self.active_tasks.pop(i)
-                return
+        self.session.open(self.path_to_db)
+        active_task_id_match = Expression(self.queued_activities_id_column_name, Operation.EQUAL, id)
+        self.session.delete(self.queued_activities_table_name).where(active_task_id_match).execute()
+        self.session.close()
+        self.task_timers.pop(id)
 
     def toggle_task(self, id):
-        for task in self.tasks:
-            if task.id == id:
-                task.toggle()
-                return
-
+        self.session.open(self.path_to_db)
+        task_id_match = Expression(self.activity_id_column_name, Operation.EQUAL, id)
+        state = not self.session.select(self.activities_table_name, [self.activity_disabled_column_name]).where(task_id_match).fetch()[0][0]
+        self.session.update(self.activities_table_name, [self.activity_disabled_column_name], [state]).where(task_id_match).execute()
+        self.session.close()
+        
     def backup(self):
-        with open("backup.json", 'w') as f:
-            json.dump({
-                'tasks': self.get_tasks(),
-                'active_tasks': self.get_active_tasks(),
-                'cooldown': self.cooldown_in_seconds,
-                'task_time': self.task_time,
-                'free_id': self.free_id
-            },f,indent=4)
+        self.session.open("session.db")
+        for task_id in self.task_timers:
+            task_id_match = Expression(self.queued_activities_id_column_name, Operation.EQUAL, task_id)
+            self.session.update(self.queued_activities_table_name,
+                                [self.queued_activities_remaining_time_column_name],
+                                [self.task_timers[task_id].remaining_time()]
+                                ).where(task_id_match).execute()
+        self.session.close()
 
     def load(self):
-        try:
-            with open("backup.json", 'r') as f:
-                data = json.load(f)
-                for task in data['tasks']:
-                    base_task = BaseTask(task['name'], task['type'], task['min'], task['max'], task['total'], task['id'])
-                    self.tasks.append(base_task)
-                for active_task in data['active_tasks']:
-                    active_task = ActiveTask(active_task['name'], active_task['value'], active_task['time'], active_task['remaining_time'], active_task['id'])
-                    self.active_tasks.append(active_task)
-                self.cooldown_in_seconds = data['cooldown']
-                self.task_time = data['task_time']
-                self.free_id = data['free_id']
-        except:
-            pass
+        self.session.open("session.db")
+        active_tasks = self.session.select(self.queued_activities_table_name,
+                                            [
+                                                self.queued_activities_id_column_name,
+                                                self.queued_activities_remaining_time_column_name
+                                            ]).fetch(RowsStyle.DICTIONARY)
+        for active_task in active_tasks:
+            self.task_timers[active_task[self.queued_activities_id_column_name]] = Timer(active_task[self.queued_activities_remaining_time_column_name])
+        self.session.close()
 
     def toggle(self, to_on):
         if to_on:
             self.paused = False
-            for task in self.active_tasks:
-                task.start()
+            for task_id in self.task_timers:
+                self.task_timers[task_id].start()
             self.main_timer.start()
         else:
             self.paused = True
-            for task in self.active_tasks:
-                task.pause()
+            for task_id in self.task_timers:
+                self.task_timers[task_id].pause()
             self.main_timer.pause()
 
     def schedule_new_tasks(self, task_cnt):
-        available_tasks = []
-        for task in self.tasks:
-            if not task.disabled:
-                available_tasks.append(task)
+        self.session.open(self.path_to_db)
+        is_enabled = Expression(self.activity_disabled_column_name, Operation.EQUAL, False)
+        available_tasks = self.session.select(self.activities_table_name, 
+                                                [
+                                                self.activity_id_column_name,
+                                                self.activity_min_column_name,
+                                                self.activity_max_column_name
+                                                ]).where(is_enabled).fetch(RowsStyle.DICTIONARY)
+        self.session.close()
         if len(available_tasks) == 0:
             return
+
+        self.session.open(self.path_to_db)
         for _ in range(task_cnt):
             base_task = random.choice(available_tasks)
-            self.active_tasks.append(ActiveTask(base_task.name, base_task.generate_value(), self.task_time, self.task_time, self.free_id))
-            self.free_id += 1
-            self.active_tasks[-1].start()
-
-    
-    def update_main_timer(self):
-        self.main_timer = Timer(self.cooldown_in_seconds)
-        self.main_timer.start()
+            print(base_task)
+            self.session.insert_into(self.queued_activities_table_name, 
+                                    [
+                                        self.queued_activities_activity_id_column_name,
+                                        self.queued_activities_value_column_name,
+                                        self.queued_activities_time_column_name,
+                                        self.queued_activities_remaining_time_column_name
+                                    ],
+                                    [
+                                        base_task[self.activity_id_column_name],
+                                        random.randint(base_task[self.activity_min_column_name], base_task[self.activity_max_column_name]),
+                                        self.task_time,
+                                        self.task_time
+                                    ]).execute()
+            self.task_timers[self.session.last_row_id()] = Timer(self.task_time)
+            self.task_timers[self.session.last_row_id()].start()
+        self.session.close()
 
     def start(self):
         self.update_main_timer()
-        if len(self.active_tasks) > 0:
-            for active_task in self.active_tasks:
-                active_task.start()
+        if len(self.task_timers) > 0:
+            for task_id in self.task_timers:
+                self.task_timers[task_id].start()
 
-        while True:
-            time.sleep(0.5)
-            if self.paused:
-                continue
+    def update(self):
+        if self.main_timer.finished():
+            self.schedule_new_tasks(1)
+            self.update_main_timer()
 
-            if self.main_timer.finished():
-                self.schedule_new_tasks(1)
-                self.update_main_timer()
-
-            to_remove = []
-            for i, task_timer in enumerate(self.active_tasks):
-                if task_timer.finished():
-                    to_remove.append(i)
-            
-            for id in to_remove:
-                self.active_tasks.pop(id)
+        for task_id in self.task_timers:
+            if self.task_timers[task_id].finished():
+                self.task_timers.pop(task_id)
                 self.schedule_new_tasks(2)
+
+if __name__ == "__main__":
+    scheduler = Scheduler()
+    scheduler.load()
+    print(len(scheduler.get_active_tasks()))
+    for active_task in scheduler.get_active_tasks():
+        print(active_task)
+    print(scheduler.get_tasks())
+    scheduler.schedule_new_tasks(2)
+    print(len(scheduler.get_active_tasks()))
+    for active_task in scheduler.get_active_tasks():
+        print(active_task)

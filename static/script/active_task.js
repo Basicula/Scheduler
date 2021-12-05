@@ -11,12 +11,13 @@ function format_time(time_in_s) {
   }
 
 class ActiveTask {
-    constructor(task) {
-        this.name = task.name;
-        this.value = task.value;
-        this.time = task.time;
-        this.remaining_time = task.remaining_time;
-        this.id = task.id;
+    constructor(task, name) {
+        this.name = name;
+        this.activity_id = task.ActivityId;
+        this.value = task.Value;
+        this.time = task.Time;
+        this.remaining_time = task.RemainingTime;
+        this.id = task.Id;
         this.position = [0, 0];
         this.complited = false;
         

@@ -1,6 +1,4 @@
 from flask import Flask, render_template, url_for, request, Response
-from multiprocessing import Process
-from multiprocessing.managers import BaseManager
 
 from scheduler import *
 
@@ -29,6 +27,7 @@ def task_time_set():
 
 @app.route("/scheduler_get", methods=["GET"])
 def scheduler_get_task():
+    scheduler.update()
     response = {}
     response['countdown_time'] = scheduler.countdown_time()
     response['active_tasks'] = scheduler.get_active_tasks()
@@ -68,13 +67,8 @@ def toggle_task():
     return Response(status=200)
 
 if __name__ == "__main__":
-    BaseManager.register("Scheduler", Scheduler)
-    manager = BaseManager()
-    manager.start()
-
-    scheduler = manager.Scheduler()
+    scheduler = Scheduler()
     scheduler.load()
-    scheduler_main_process = Process(target=scheduler.start)
-    scheduler_main_process.start()
+    scheduler.start()
 
     app.run(debug=False)
