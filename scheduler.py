@@ -3,7 +3,6 @@ import time
 import json
 from datetime import datetime
 from oopdb.OOPDB import OOPDB, RowsStyle
-from oopdb.ColumnConfig import ColumnConfig, PrimaryKey, ForeignKey
 from oopdb.Expression import Expression, Operation
 
 class Timer:
@@ -18,9 +17,6 @@ class Timer:
     def start(self):
         self.start_time = datetime.now()
         self.running = True
-
-    def toggle(self):
-        pass
 
     def finished(self):
         if not self.running:
@@ -40,7 +36,7 @@ class Scheduler:
     activity_min_column_name = "Min"
     activity_max_column_name = "Max"
     activity_total_column_name = "TotalDone"
-    
+
     queued_activities_table_name = "QueuedActivities"
     queued_activities_id_column_name = "Id"
     queued_activities_activity_id_column_name = "ActivityId"
@@ -106,7 +102,7 @@ class Scheduler:
         state = not self.session.select(self.activities_table_name, [self.activity_disabled_column_name]).where(task_id_match).fetch()[0][0]
         self.session.update(self.activities_table_name, [self.activity_disabled_column_name], [state]).where(task_id_match).execute()
         self.session.close()
-        
+
     def backup(self):
         self.session.open("session.db")
         for task_id in self.task_timers:
@@ -189,15 +185,3 @@ class Scheduler:
             if self.task_timers[task_id].finished():
                 self.task_timers.pop(task_id)
                 self.schedule_new_tasks(2)
-
-if __name__ == "__main__":
-    scheduler = Scheduler()
-    scheduler.load()
-    print(len(scheduler.get_active_tasks()))
-    for active_task in scheduler.get_active_tasks():
-        print(active_task)
-    print(scheduler.get_tasks())
-    scheduler.schedule_new_tasks(2)
-    print(len(scheduler.get_active_tasks()))
-    for active_task in scheduler.get_active_tasks():
-        print(active_task)
