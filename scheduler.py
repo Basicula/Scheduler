@@ -170,7 +170,7 @@ class Scheduler:
         to_remove = []
         for task_id in self.task_timers:
             if self.task_timers[task_id].finished():
-                to_remove(task_id)
+                to_remove.append(task_id)
             else:
                 task_id_match = Expression(self.queued_activities_id_column_name, Operation.EQUAL, task_id)
                 self.session.update(self.queued_activities_table_name,
