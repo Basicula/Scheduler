@@ -1,6 +1,4 @@
 import random
-import time
-import json
 from datetime import datetime
 from oopdb.OOPDB import OOPDB, RowsStyle
 from oopdb.Expression import Expression, Operation
@@ -44,10 +42,9 @@ class Scheduler:
     queued_activities_time_column_name = "Time"
     queued_activities_remaining_time_column_name = "RemainingTime"
 
-    path_to_db = "session.db"
-
     def __init__(self):
         self.session = OOPDB()
+        self.session.open("session.db")
         self.cooldown_in_seconds = 1800 # every 30 min
         self.task_time = 43200 # 12 hours
         self.main_timer = Timer(self.cooldown_in_seconds)
@@ -55,18 +52,10 @@ class Scheduler:
         self.paused = False
 
     def get_active_tasks(self):
-        self.session.open(self.path_to_db)
-        active_tasks = self.session.select(self.queued_activities_table_name).fetch(RowsStyle.DICTIONARY)
-        for active_task in active_tasks:
-            active_task[self.queued_activities_remaining_time_column_name] = self.task_timers[active_task[self.queued_activities_id_column_name]].remaining_time()
-        self.session.close()
-        return active_tasks
+        return self.session.select(self.queued_activities_table_name).fetch(RowsStyle.DICTIONARY)
 
     def get_tasks(self):
-        self.session.open(self.path_to_db)
-        tasks = self.session.select(self.activities_table_name).fetch(RowsStyle.DICTIONARY)
-        self.session.close()
-        return tasks
+        return self.session.select(self.activities_table_name).fetch(RowsStyle.DICTIONARY)
 
     def update_main_timer(self):
         self.main_timer = Timer(self.cooldown_in_seconds)
@@ -90,31 +79,32 @@ class Scheduler:
         return self.main_timer.remaining_time()
 
     def complete_task(self, id):
-        self.session.open(self.path_to_db)
         active_task_id_match = Expression(self.queued_activities_id_column_name, Operation.EQUAL, id)
+        completed_task = self.session.select(self.queued_activities_table_name,
+                                            [self.queued_activities_value_column_name,
+                                             self.queued_activities_activity_id_column_name]).where(active_task_id_match).fetch(RowsStyle.DICTIONARY)[0]
         self.session.delete(self.queued_activities_table_name).where(active_task_id_match).execute()
-        self.session.close()
         self.task_timers.pop(id)
 
+        task_id_match = Expression(self.activity_id_column_name, Operation.EQUAL, completed_task[self.queued_activities_activity_id_column_name])
+        new_total = self.session.select(self.activities_table_name, [self.activity_total_column_name]).where(task_id_match).fetch()[0][0]
+        new_total += completed_task[self.queued_activities_value_column_name]
+        new_total = self.session.update(self.activities_table_name, [self.activity_total_column_name], [new_total]).where(task_id_match).execute()
+
     def toggle_task(self, id):
-        self.session.open(self.path_to_db)
         task_id_match = Expression(self.activity_id_column_name, Operation.EQUAL, id)
         state = not self.session.select(self.activities_table_name, [self.activity_disabled_column_name]).where(task_id_match).fetch()[0][0]
         self.session.update(self.activities_table_name, [self.activity_disabled_column_name], [state]).where(task_id_match).execute()
-        self.session.close()
 
     def backup(self):
-        self.session.open("session.db")
         for task_id in self.task_timers:
             task_id_match = Expression(self.queued_activities_id_column_name, Operation.EQUAL, task_id)
             self.session.update(self.queued_activities_table_name,
                                 [self.queued_activities_remaining_time_column_name],
                                 [self.task_timers[task_id].remaining_time()]
                                 ).where(task_id_match).execute()
-        self.session.close()
 
     def load(self):
-        self.session.open("session.db")
         active_tasks = self.session.select(self.queued_activities_table_name,
                                             [
                                                 self.queued_activities_id_column_name,
@@ -122,7 +112,6 @@ class Scheduler:
                                             ]).fetch(RowsStyle.DICTIONARY)
         for active_task in active_tasks:
             self.task_timers[active_task[self.queued_activities_id_column_name]] = Timer(active_task[self.queued_activities_remaining_time_column_name])
-        self.session.close()
 
     def toggle(self, to_on):
         if to_on:
@@ -137,7 +126,6 @@ class Scheduler:
             self.main_timer.pause()
 
     def schedule_new_tasks(self, task_cnt):
-        self.session.open(self.path_to_db)
         is_enabled = Expression(self.activity_disabled_column_name, Operation.EQUAL, False)
         available_tasks = self.session.select(self.activities_table_name, 
                                                 [
@@ -145,14 +133,12 @@ class Scheduler:
                                                 self.activity_min_column_name,
                                                 self.activity_max_column_name
                                                 ]).where(is_enabled).fetch(RowsStyle.DICTIONARY)
-        self.session.close()
+
         if len(available_tasks) == 0:
             return
 
-        self.session.open(self.path_to_db)
         for _ in range(task_cnt):
             base_task = random.choice(available_tasks)
-            print(base_task)
             self.session.insert_into(self.queued_activities_table_name, 
                                     [
                                         self.queued_activities_activity_id_column_name,
@@ -166,9 +152,9 @@ class Scheduler:
                                         self.task_time,
                                         self.task_time
                                     ]).execute()
-            self.task_timers[self.session.last_row_id()] = Timer(self.task_time)
-            self.task_timers[self.session.last_row_id()].start()
-        self.session.close()
+            task_id = self.session.last_row_id()
+            self.task_timers[task_id] = Timer(self.task_time)
+            self.task_timers[task_id].start()
 
     def start(self):
         self.update_main_timer()
@@ -181,7 +167,18 @@ class Scheduler:
             self.schedule_new_tasks(1)
             self.update_main_timer()
 
+        to_remove = []
         for task_id in self.task_timers:
             if self.task_timers[task_id].finished():
-                self.task_timers.pop(task_id)
-                self.schedule_new_tasks(2)
+                to_remove(task_id)
+            else:
+                task_id_match = Expression(self.queued_activities_id_column_name, Operation.EQUAL, task_id)
+                self.session.update(self.queued_activities_table_name,
+                                    [self.queued_activities_remaining_time_column_name],
+                                    [self.task_timers[task_id].remaining_time()]).where(task_id_match).execute()
+
+        for task_id in to_remove:
+            self.task_timers.pop(task_id)
+            task_id_match = Expression(self.queued_activities_id_column_name, Operation.EQUAL, task_id)
+            self.session.delete(self.queued_activities_table_name).where(task_id_match).execute()
+            self.schedule_new_tasks(2)

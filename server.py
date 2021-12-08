@@ -4,8 +4,9 @@ from scheduler import *
 
 app = Flask(__name__)
 
-scheduler = None
-scheduler_main_process = None
+scheduler = Scheduler()
+scheduler.load()
+scheduler.start()
 
 @app.route("/")
 def home():
@@ -27,8 +28,8 @@ def task_time_set():
 
 @app.route("/scheduler_get", methods=["GET"])
 def scheduler_get_task():
-    scheduler.update()
     response = {}
+    scheduler.update()
     response['countdown_time'] = scheduler.countdown_time()
     response['active_tasks'] = scheduler.get_active_tasks()
     response['tasks'] = scheduler.get_tasks()
@@ -67,8 +68,4 @@ def toggle_task():
     return Response(status=200)
 
 if __name__ == "__main__":
-    scheduler = Scheduler()
-    scheduler.load()
-    scheduler.start()
-
-    app.run(debug=False)
+    app.run(threaded=False, debug=False)

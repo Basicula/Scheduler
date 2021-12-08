@@ -114,7 +114,7 @@ class SchedulerField {
 
     sort_tasks() {
         this.active_tasks.sort(function (a, b) {
-            return a.remaining_time < b.remaining_time;
+            return a.remaining_time - b.remaining_time;
         });
         var x = 0, y = 0;
         const pos = $(this._field_element).position();
@@ -156,6 +156,9 @@ function update_totals(tasks) {
 function init_base_tasks(tasks) {
     base_tasks_elements = [];
     var base_tasks_container = document.getElementById("base_tasks_container");
+    while (base_tasks_container.firstChild) {
+        base_tasks_container.removeChild(base_tasks_container.lastChild);
+    }
     for (let i = 0; i < tasks.length; ++i) {
         const task = tasks[i];
         base_tasks_elements.push(new DropDownButton(task.Name + ": "));
