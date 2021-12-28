@@ -23,6 +23,59 @@ class SchedulerField {
         this.active_tasks.push(task);
         this._field_element.appendChild(task.element);
 
+        var self = this;
+        task.element.onmousedown = function(event) {
+            var moved = false;
+            const shiftX = event.clientX - this.getBoundingClientRect().left;
+            const shiftY = event.clientY - this.getBoundingClientRect().top;
+
+            var draggable_element = this;
+            function onMouseMove(event) {
+                draggable_element.style.left = event.pageX - shiftX + 'px';
+                draggable_element.style.top = event.pageY - shiftY + 'px';
+                moved = true;
+            }
+
+            if (event.button == 0)
+                document.addEventListener('mousemove', onMouseMove);
+
+            this.onmouseup = function(e){
+                if (moved) {
+                    document.removeEventListener('mousemove', onMouseMove);
+                    this.onmouseup = null;
+                    moved = false;
+                }
+                else {
+                    if (e.button == 1) {
+                        task.alarm_sound.pause();
+                        task.alarm_stoped = true;
+                    }
+                    else {
+                        $.ajax({
+                            url: "/complete_task",
+                            type: "DELETE",
+                            data: {
+                                'id': task.id,
+                            },
+                            success: function() {
+                                for (let i = 0; i < self.active_tasks.length; ++i) {
+                                    if (self.active_tasks[i].id == task.id) {
+                                        self._field_element.removeChild(self.active_tasks[i].element);
+                                        self.active_tasks.splice(i, 1);
+                                        break;
+                                    }
+                                }
+                            }
+                        });
+                    }
+                }
+            };
+
+            this.ondragstart = function() {
+                return false;
+            };
+        };
+
         const parent_pos = $(this._field_element).position();
         const top = parent_pos.top + CommonUtils.random(0, this._field_element.offsetHeight - $(task.element).height());
         const left = parent_pos.left + CommonUtils.random(0, this._field_element.offsetWidth - $(task.element).width());

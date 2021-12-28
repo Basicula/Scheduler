@@ -19,7 +19,6 @@ class ActiveTask {
         this.remaining_time = task.RemainingTime;
         this.id = task.Id;
         this.position = [0, 0];
-        this.complited = false;
         
         this.alarm_sound = new Audio('https://media.geeksforgeeks.org/wp-content/uploads/20190531135120/beep.mp3');
         this.alarm_stoped = false;
@@ -46,51 +45,6 @@ class ActiveTask {
     _init_element() {
         this.element = document.createElement("div");
         this.element.classList.add('active-task');
-
-        var self = this;
-        var moved = false;
-        this.element.onmousedown = function(event) {
-            const shiftX = event.clientX - this.getBoundingClientRect().left;
-            const shiftY = event.clientY - this.getBoundingClientRect().top;
-
-            var draggable_element = this;
-            function onMouseMove(event) {
-                draggable_element.style.left = event.pageX - shiftX + 'px';
-                draggable_element.style.top = event.pageY - shiftY + 'px';
-                moved = true;
-            }
-
-            if (event.button == 0)
-                document.addEventListener('mousemove', onMouseMove);
-
-            this.onmouseup = function(e){
-                if (moved) {
-                    document.removeEventListener('mousemove', onMouseMove);
-                    this.onmouseup = null;
-                    moved = false;
-                }
-                else {
-                    if (e.button == 1) {
-                        self.alarm_sound.pause();
-                        self.alarm_stoped = true;
-                    }
-                    else {
-                        self.complited = true;
-                        $.ajax({
-                            url: "/complete_task",
-                            type: "DELETE",
-                            data: {
-                                'id': self.id,
-                            }
-                        });
-                    }
-                }
-            };
-
-            this.ondragstart = function() {
-                return false;
-            };
-        };
     }
 
     _init_timer_element() {
