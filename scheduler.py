@@ -42,14 +42,21 @@ class Scheduler:
     queued_activities_time_column_name = "Time"
     queued_activities_remaining_time_column_name = "RemainingTime"
 
+    config_table_name = "Config"
+    config_id_column_name = "Id"
+    config_task_time_column_name = "TaskTime"
+    config_cooldown_column_name = "Cooldown"
+    config_remaining_time_column_name = "Remaining"
+    config_paused_column_name = "Paused"
+
     def __init__(self):
         self.session = OOPDB()
         self.session.open("session.db")
-        self.cooldown_in_seconds = 1800 # every 30 min
-        self.task_time = 43200 # 12 hours
-        self.main_timer = Timer(self.cooldown_in_seconds)
+        self.cooldown_in_seconds = self.session.select(self.config_table_name, [self.config_cooldown_column_name]).fetch()[0][0]
+        self.task_time = self.session.select(self.config_table_name, [self.config_task_time_column_name]).fetch()[0][0]
+        self.main_timer = Timer(self.session.select(self.config_table_name, [self.config_remaining_time_column_name]).fetch()[0][0])
         self.task_timers = {}
-        self.paused = False
+        self.paused = self.session.select(self.config_table_name, [self.config_paused_column_name]).fetch()[0][0]
 
     def get_active_tasks(self):
         return self.session.select(self.queued_activities_table_name).fetch(RowsStyle.DICTIONARY)
@@ -63,6 +70,7 @@ class Scheduler:
 
     def set_cooldown(self, cooldown_in_seconds):
         self.cooldown_in_seconds = cooldown_in_seconds
+        self.session.update(self.config_table_name, [self.config_cooldown_column_name], [cooldown_in_seconds]).execute()
         if self.main_timer.remaining_time() > self.cooldown_in_seconds:
             self.update_main_timer()
 
@@ -71,6 +79,7 @@ class Scheduler:
 
     def set_task_time(self, task_time):
         self.task_time = task_time
+        self.session.update(self.config_table_name, [self.config_task_time_column_name], [task_time]).execute()
 
     def get_task_time(self):
         return self.task_time
@@ -119,13 +128,15 @@ class Scheduler:
             for task_id in self.task_timers:
                 self.task_timers[task_id].start()
             self.main_timer.start()
+            self.session.update(self.config_table_name, [self.config_paused_column_name], [False]).execute()
         else:
             self.paused = True
             for task_id in self.task_timers:
                 self.task_timers[task_id].pause()
             self.main_timer.pause()
+            self.session.update(self.config_table_name, [self.config_paused_column_name], [True]).execute()
 
-    def schedule_new_tasks(self, task_cnt):
+    def schedule_new_tasks(self, task_cnt, time_offset = 0):
         is_enabled = Expression(self.activity_disabled_column_name, Operation.EQUAL, False)
         available_tasks = self.session.select(self.activities_table_name, 
                                                 [
@@ -137,6 +148,7 @@ class Scheduler:
         if len(available_tasks) == 0:
             return
 
+        remaining_time = self.task_time - time_offset
         for _ in range(task_cnt):
             base_task = random.choice(available_tasks)
             self.session.insert_into(self.queued_activities_table_name, 
@@ -150,10 +162,10 @@ class Scheduler:
                                         base_task[self.activity_id_column_name],
                                         random.randint(base_task[self.activity_min_column_name], base_task[self.activity_max_column_name]),
                                         self.task_time,
-                                        self.task_time
+                                        remaining_time
                                     ]).execute()
             task_id = self.session.last_row_id()
-            self.task_timers[task_id] = Timer(self.task_time)
+            self.task_timers[task_id] = Timer(remaining_time)
             self.task_timers[task_id].start()
 
     def start(self):
@@ -164,8 +176,15 @@ class Scheduler:
 
     def update(self):
         if self.main_timer.finished():
-            self.schedule_new_tasks(1)
+            overdue_time = abs(self.main_timer.remaining_time())
+            new_tasks_cnt = (overdue_time + self.cooldown_in_seconds) // self.cooldown_in_seconds
+            for task_id in range(new_tasks_cnt):
+                self.schedule_new_tasks(1, task_id * self.cooldown_in_seconds)
             self.update_main_timer()
+
+        self.session.update(self.config_table_name,
+                            [self.config_remaining_time_column_name],
+                            [abs(self.main_timer.remaining_time())]).execute()
 
         to_remove = []
         for task_id in self.task_timers:
@@ -178,7 +197,8 @@ class Scheduler:
                                     [self.task_timers[task_id].remaining_time()]).where(task_id_match).execute()
 
         for task_id in to_remove:
+            overdue_time = abs(self.task_timers[task_id].remaining_time())
             self.task_timers.pop(task_id)
             task_id_match = Expression(self.queued_activities_id_column_name, Operation.EQUAL, task_id)
             self.session.delete(self.queued_activities_table_name).where(task_id_match).execute()
-            self.schedule_new_tasks(2)
+            self.schedule_new_tasks(2, overdue_time)
