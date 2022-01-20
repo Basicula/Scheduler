@@ -165,10 +165,20 @@ class SchedulerField {
         }
     }
 
-    sort_tasks() {
-        this.active_tasks.sort(function (a, b) {
-            return a.remaining_time - b.remaining_time;
-        });
+    sort_tasks(mode = 0) {
+        if (mode === 0) {
+            this.active_tasks.sort(function (a, b) {
+                return a.remaining_time - b.remaining_time;
+            });
+        }
+        else if (mode === 1) {
+            this.active_tasks.sort(function (a, b) {
+                const id_diff = a.activity_id - b.activity_id ;
+                if (id_diff === 0)
+                    return a.remaining_time - b.remaining_time;
+                return id_diff;
+            });
+        }
         var x = 0, y = 0;
         const pos = $(this._field_element).position();
         const maxx = this._field_element.offsetWidth;
@@ -357,7 +367,9 @@ function set_events() {
 
     $(document).keypress(function (event) {
         if (event.ctrlKey && event.shiftKey && event.code === "KeyS") // ctrl + shift + s
-            scheduler_field.sort_tasks();
+            scheduler_field.sort_tasks(0);
+        else if (event.shiftKey && event.code === "KeyG") // shift + g
+            scheduler_field.sort_tasks(1);
     });
 }
 
