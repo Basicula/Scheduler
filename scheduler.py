@@ -1,3 +1,4 @@
+import json
 import random
 from datetime import datetime
 from oopdb.OOPDB import OOPDB, RowsStyle
@@ -30,6 +31,7 @@ class Timer:
 class Scheduler:
     activities_table_name = "Activities"
     activity_id_column_name = "Id"
+    activity_name_column_name = "Name"
     activity_disabled_column_name = "Disabled"
     activity_min_column_name = "Min"
     activity_max_column_name = "Max"
@@ -92,13 +94,15 @@ class Scheduler:
         completed_task = self.session.select(self.queued_activities_table_name,
                                             [self.queued_activities_value_column_name,
                                              self.queued_activities_activity_id_column_name]).where(active_task_id_match).fetch(RowsStyle.DICTIONARY)[0]
-        self.session.delete(self.queued_activities_table_name).where(active_task_id_match).execute()
-        self.task_timers.pop(id)
 
         task_id_match = Expression(self.activity_id_column_name, Operation.EQUAL, completed_task[self.queued_activities_activity_id_column_name])
         new_total = self.session.select(self.activities_table_name, [self.activity_total_column_name]).where(task_id_match).fetch()[0][0]
         new_total += completed_task[self.queued_activities_value_column_name]
         new_total = self.session.update(self.activities_table_name, [self.activity_total_column_name], [new_total]).where(task_id_match).execute()
+
+        self.update_statistics(id, True)
+        self.session.delete(self.queued_activities_table_name).where(active_task_id_match).execute()
+        self.task_timers.pop(id)
 
     def toggle_task(self, id):
         task_id_match = Expression(self.activity_id_column_name, Operation.EQUAL, id)
@@ -169,7 +173,7 @@ class Scheduler:
             self.task_timers[task_id].start()
 
     def start(self):
-        self.update_main_timer()
+        self.main_timer.start()
         if len(self.task_timers) > 0:
             for task_id in self.task_timers:
                 self.task_timers[task_id].start()
@@ -198,7 +202,62 @@ class Scheduler:
 
         for task_id in to_remove:
             overdue_time = abs(self.task_timers[task_id].remaining_time())
+            self.update_statistics(task_id, False)
             self.task_timers.pop(task_id)
             task_id_match = Expression(self.queued_activities_id_column_name, Operation.EQUAL, task_id)
             self.session.delete(self.queued_activities_table_name).where(task_id_match).execute()
             self.schedule_new_tasks(2, overdue_time)
+
+    def update_statistics(self, id, done):
+        with open("statistics.json", 'r') as fi:
+            statistics = json.load(fi)
+
+            match_id = Expression(self.queued_activities_id_column_name, Operation.EQUAL, id)
+            active_task = self.session.select(self.queued_activities_table_name).where(match_id).fetch(RowsStyle.DICTIONARY)[0]
+            activity_id = active_task[self.queued_activities_activity_id_column_name]
+            match_id = Expression(self.activity_id_column_name, Operation.EQUAL, activity_id)
+            activity = self.session.select(self.activities_table_name).where(match_id).fetch(RowsStyle.DICTIONARY)[0]
+
+            today = datetime.today().strftime("%d/%m/%Y")
+            def update_failed_or_done(failed_or_done : str):
+                exists = False
+                for today_statistic_activity in statistics[today][failed_or_done]:
+                    if today_statistic_activity["id"] == activity_id:
+                        today_statistic_activity["total"] += active_task[self.queued_activities_value_column_name]
+                        exists = True
+                        break
+                if not exists:
+                    today_statistic_activity = {}
+                    today_statistic_activity["id"] = activity_id
+                    today_statistic_activity["total"] = active_task[self.queued_activities_value_column_name]
+                    today_statistic_activity["name"] = activity[self.activity_name_column_name]
+                    statistics[today][failed_or_done].append(today_statistic_activity)
+
+            def update_totals():
+                exists = False
+                for today_activity in statistics[today]["totals"]:
+                    if today_activity["id"] == activity_id:
+                        today_activity["total"] = activity[self.activity_total_column_name]
+                        exists = True
+                        break
+                if not exists:
+                    today_activity = {}
+                    today_activity["id"] = activity_id
+                    today_activity["total"] = activity[self.activity_total_column_name]
+                    today_activity["name"] = activity[self.activity_name_column_name]
+                    statistics[today]["totals"].append(today_activity)
+
+            if not today in statistics:
+                statistics[today] = {}
+                statistics[today]["done"] = []
+                statistics[today]["failed"] = []
+                statistics[today]["totals"] = []
+                
+            update_totals()
+            if done:
+                update_failed_or_done("done")
+            else:
+                update_failed_or_done("failed")
+
+            with open("statistics.json", 'w') as fo:
+                json.dump(statistics, fo, indent=2)
