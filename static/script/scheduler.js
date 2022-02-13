@@ -277,6 +277,17 @@ function init_base_tasks(tasks) {
         task_range.textContent = "Range: [" + task.Min + ", " + task.Max + "]"
         task_inner_content.appendChild(task_range);
 
+        var task_schedule_button = document.createElement("button");
+        task_schedule_button.textContent = "Schedule";
+        task_schedule_button.onclick = () => {
+            $.ajax({
+                type: "PUT",
+                url: "/schedule_task",
+                data: {"id" : task.Id}
+            });
+        };
+        task_inner_content.appendChild(task_schedule_button);
+
         base_tasks_elements[i].button.classList.add("task-header");
         base_tasks_elements[i].set_inner_content(task_inner_content);
 

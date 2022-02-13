@@ -104,6 +104,34 @@ class Scheduler:
         self.session.delete(self.queued_activities_table_name).where(active_task_id_match).execute()
         self.task_timers.pop(id)
 
+    def schedule_task(self, id):
+        task_id_match = Expression(self.activity_id_column_name, Operation.EQUAL, id)
+        base_task = self.session.select(self.activities_table_name,
+                                        [
+                                        self.activity_id_column_name,
+                                        self.activity_min_column_name,
+                                        self.activity_max_column_name
+                                        ]).where(task_id_match).fetch(RowsStyle.DICTIONARY)[0]
+        self.session.insert_into(self.queued_activities_table_name, 
+                                [
+                                    self.queued_activities_activity_id_column_name,
+                                    self.queued_activities_value_column_name,
+                                    self.queued_activities_time_column_name,
+                                    self.queued_activities_remaining_time_column_name
+                                ],
+                                [
+                                    id,
+                                    random.randint(
+                                        base_task[self.activity_min_column_name],
+                                        base_task[self.activity_max_column_name]
+                                        ),
+                                    self.task_time,
+                                    self.task_time
+                                ]).execute()
+        task_id = self.session.last_row_id()
+        self.task_timers[task_id] = Timer(self.task_time)
+        self.task_timers[task_id].start()
+
     def toggle_task(self, id):
         task_id_match = Expression(self.activity_id_column_name, Operation.EQUAL, id)
         state = not self.session.select(self.activities_table_name, [self.activity_disabled_column_name]).where(task_id_match).fetch()[0][0]

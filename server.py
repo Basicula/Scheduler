@@ -41,6 +41,12 @@ def complete_task():
     scheduler.complete_task(int(form['id']))
     return Response(status=200)
 
+@app.route("/schedule_task", methods=["PUT"])
+def schedule_task():
+    form = request.form
+    scheduler.schedule_task(int(form['id']))
+    return Response(status=200)
+
 @app.route("/pause", methods=["PUT"])
 def pause():
     scheduler.toggle(False)
