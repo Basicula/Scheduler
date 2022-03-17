@@ -72,6 +72,19 @@ def get_period_statistics(statistics, start_date, end_date):
         curr += step
     return period_statistics
 
+def fill_statistic_bars(statistics, axis):
+    x = np.arange(len(statistics))
+    done_x = x - 0.2
+    failed_x = x + 0.2
+    statistics = np.array(statistics)
+    done_bars = axis.bar(done_x, np.array(statistics[:,2], dtype=np.int32), width=0.4, label="Done")
+    missed_bars = axis.bar(failed_x, np.array(statistics[:,3], dtype=np.int32), width=0.4, label="Missed")
+    axis.set_xticks(x, labels=statistics[:,1], rotation=10)
+    axis.legend()
+
+    axis.bar_label(done_bars, label_type="center")
+    axis.bar_label(missed_bars, label_type="center")
+
 def plot_day_statistics(day_statistics, date = ""):
     fig = plt.figure()
 
@@ -89,17 +102,7 @@ def plot_day_statistics(day_statistics, date = ""):
     time_ax.yaxis.set_major_formatter(seconds_formatter)
 
     for data, ax in zip([day_statistics["Reps"], day_statistics["Time"]], [reps_ax, time_ax]):
-        x = np.arange(len(data))
-        done_x = x - 0.2
-        failed_x = x + 0.2
-        data = np.array(data)
-        done_bars = ax.bar(done_x, np.array(data[:,2], dtype=np.int32), width=0.4, label="Done")
-        failed_bars = ax.bar(failed_x, np.array(data[:,3], dtype=np.int32), width=0.4, label="Failed")
-        ax.set_xticks(x, labels=data[:,1])
-        ax.legend()
-
-        ax.bar_label(done_bars, label_type="center")
-        ax.bar_label(failed_bars, label_type="center")
+        fill_statistic_bars(data, ax)
 
     plt.show()
 
@@ -121,17 +124,7 @@ def plot_period_statistics(statistics, start, end):
 
     period_statistics = get_period_statistics(statistics, start, end)
     for data, ax in zip([period_statistics["Reps"], period_statistics["Time"]], [reps_ax, time_ax]):
-        x = np.arange(len(data))
-        done_x = x - 0.2
-        failed_x = x + 0.2
-        data = np.array(data)
-        done_bars = ax.bar(done_x, np.array(data[:,2], dtype=np.int32), width=0.4, label="Done")
-        failed_bars = ax.bar(failed_x, np.array(data[:,3], dtype=np.int32), width=0.4, label="Failed")
-        ax.set_xticks(x, labels=data[:,1], rotation=10)
-        ax.legend()
-
-        ax.bar_label(done_bars, label_type="center")
-        ax.bar_label(failed_bars, label_type="center")
+        fill_statistic_bars(data, ax)
 
     plt.show()
 
@@ -194,10 +187,11 @@ def plot_activity_total_statistic(statistics, activity_id):
     plt.show()
 
 if __name__ == "__main__":
+    statistic_creation = "20/01/2022"
     statistics = load_statistics()
     today = datetime.datetime.today().strftime("%d/%m/%Y")
     #day_statistics = get_day_statistics(statistics, today)
     #plot_day_statistics(day_statistics)
-    plot_period_statistics(statistics, "01/02/2022", today)
+    plot_period_statistics(statistics, "01/03/2022", today)
     #plot_day_by_day_statistics(statistics)
     #plot_activity_total_statistic(statistics, 0)
