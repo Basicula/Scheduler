@@ -12,7 +12,6 @@ function reflect(vec, normal) {
 class SchedulerField {
     constructor() {
         this.active_tasks = [];
-        this.score = 0;
 
         this._field_element = document.getElementById("scheduler_field");
 
